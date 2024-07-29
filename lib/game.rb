@@ -6,7 +6,6 @@ class Game
     raise StandardError, "words file not found!" unless File.exist? filename
 
     @filename = filename
-
     @starting_num_lives = 8
     @num_lives_left = @starting_num_lives
 
@@ -20,16 +19,18 @@ class Game
 
   def play
     until game_won
-      lose_a_life unless guess_correct user_guess
+      action = user_action
+      if action[:is_save] == true
+        puts "user wants to save"
+        return
+      end
+      lose_a_life unless guess_correct action[:guess]
       display_clue
-
       if game_lost
         puts "You lost! Sadlife"
         return
       end
-
-      # >> debug only
-      puts "lives left : #{num_lives_left}"
+      puts "lives left : #{num_lives_left}\n------------------------------\n\n"
     end
     puts "You won! Congratulations"
   end
@@ -63,14 +64,17 @@ class Game
 
   def lose_a_life
     self.num_lives_left -= 1
+    puts "That is not in the secret, you lost a life!".colorize(:red)
   end
 
-  def user_guess
+  def user_action
+    puts "Enter the letter of your guess. Enter #{'save'.colorize(:green)} if you would like to save"
     input = gets.chomp.downcase
-    return input if input.match("[A-Za-z]+")
+    return { is_save: true, guess: nil } if input == "save"
+    return { is_save: false, guess: input } if input.match("^[a-zA-Z]{1}$")
 
     puts "That is not a valid letter! Please try again.".colorize(:red)
-    user_guess
+    user_action
   end
 
   def display_clue
