@@ -1,38 +1,49 @@
 require "colorize"
+require "json"
+
+require_relative "game_constants"
 
 # contains game logic for the hangman game
 class Game
-  def initialize(filename)
+  include GameConstants
+
+  attr_reader :clue, :num_lives_left, :secret_word
+
+  def initialize
+    @filename = POSSIBLE_SECRETS_FILENAME
+    @starting_num_lives = STARTING_NUM_LIVES
+
     raise StandardError, "words file not found!" unless File.exist? filename
 
-    @filename = filename
-    @starting_num_lives = 8
     @num_lives_left = @starting_num_lives
-
     @secret_word = secret_word_from_file
     @clue = Array.new(secret_word.length)
-
-    puts "Welcome to hangman!\n\n"
-    puts "Secret word : #{secret_word}"
-    display_clue
   end
 
   def play
-    until game_won
-      action = user_action
-      if action[:is_save] == true
-        puts "user wants to save"
-        return
-      end
-      lose_a_life unless guess_correct action[:guess]
-      display_clue
-      if game_lost
-        puts "You lost! Sadlife"
-        return
-      end
-      puts "lives left : #{num_lives_left}\n------------------------------\n\n"
+    intro_message
+    action = user_action
+
+    if action[:is_save] == true
+      save_game
+      return
     end
-    puts "You won! Congratulations"
+
+    lose_a_life unless guess_correct action[:guess]
+    display_clue
+
+    if game_won
+      puts "You won! Congratulations"
+      return
+    end
+
+    if game_lost
+      puts "You lost! Sadlife"
+      return
+    end
+
+    puts "lives left : #{num_lives_left}\n------------------------------\n\n"
+    play
   end
 
   def guess_correct(guess_letter)
@@ -47,6 +58,26 @@ class Game
   end
 
   private
+
+  attr_accessor :filename
+  attr_writer :clue, :num_lives, :secret_word, :num_lives_left
+
+  def intro_message
+    puts "Secret word : #{secret_word}"
+    display_clue
+  end
+
+  def save_game
+    dirname = "saves"
+    FileUtils.mkdir_p dirname
+    save_filename = Time.now.strftime("%Y-%m-%d %H-%M-%S")
+    save_obj = JSON.dump({
+      clue: clue,
+      num_lives_left: num_lives_left,
+      secret_word: secret_word
+    })
+    File.write("#{dirname}/#{save_filename}.json", save_obj)
+  end
 
   def game_won
     clue.none?(&:nil?)
@@ -88,6 +119,4 @@ class Game
     end
     puts "\n"
   end
-
-  attr_accessor :secret_word, :clue, :num_lives, :num_lives_left, :filename
 end
