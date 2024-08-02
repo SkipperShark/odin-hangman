@@ -27,8 +27,7 @@ class GameStarter
       initialize_game_if_no_save
       choice = load_option_choice
       save_raw_data = File.read("#{SAVE_FOLDER_NAME}/#{choice}")
-      game = Game.from_json(save_raw_data)
-      game.play
+      Game.from_json(save_raw_data).play
     end
   end
 

@@ -17,22 +17,19 @@ class Game
 
     @num_lives_left = num_lives_left.nil? ? @starting_num_lives : num_lives_left
     @secret_word = secret_word.nil? ? secret_word_from_file : secret_word
-    @clue = clue.nil? ? Array.new(secret_word.length) : clue
+    @clue = clue.nil? ? Array.new(@secret_word.length) : clue
   end
 
   def self.from_json(string)
     data = JSON.parse(string, { symbolize_names: true })
     new(data[:clue], data[:secret_word], data[:num_lives_left])
-    # obj.clue = data[:clue]
-    # obj.secret_word = data[:secret_word]
-    # obj.num_lives_left = data[:num_lives_left]
   end
 
   def play
     intro_message
     action = user_action
 
-    if action[:is_save] == true
+    if action[:is_save]
       save_game
       puts "game saved. See you soon!".colorize(:green)
       return
