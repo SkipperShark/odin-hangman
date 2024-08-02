@@ -9,15 +9,23 @@ class Game
 
   attr_reader :clue, :num_lives_left, :secret_word
 
-  def initialize
+  def initialize(clue = nil, secret_word = nil, num_lives_left = nil)
     @filename = POSSIBLE_SECRETS_FILENAME
     @starting_num_lives = STARTING_NUM_LIVES
 
     raise StandardError, "words file not found!" unless File.exist? filename
 
-    @num_lives_left = @starting_num_lives
-    @secret_word = secret_word_from_file
-    @clue = Array.new(secret_word.length)
+    @num_lives_left = num_lives_left.nil? ? @starting_num_lives : num_lives_left
+    @secret_word = secret_word.nil? ? secret_word_from_file : secret_word
+    @clue = clue.nil? ? Array.new(secret_word.length) : clue
+  end
+
+  def self.from_json(string)
+    data = JSON.parse(string, { symbolize_names: true })
+    new(data[:clue], data[:secret_word], data[:num_lives_left])
+    # obj.clue = data[:clue]
+    # obj.secret_word = data[:secret_word]
+    # obj.num_lives_left = data[:num_lives_left]
   end
 
   def play
@@ -26,6 +34,7 @@ class Game
 
     if action[:is_save] == true
       save_game
+      puts "game saved. See you soon!".colorize(:green)
       return
     end
 
@@ -33,16 +42,15 @@ class Game
     display_clue
 
     if game_won
-      puts "You won! Congratulations"
+      puts "You won! Congratulations".colorize(:yelow)
       return
     end
 
     if game_lost
-      puts "You lost! Sadlife"
+      puts "You lost! Sadlife".colorize(:yellow)
       return
     end
 
-    puts "lives left : #{num_lives_left}\n------------------------------\n\n"
     play
   end
 
@@ -60,11 +68,12 @@ class Game
   private
 
   attr_accessor :filename
-  attr_writer :clue, :num_lives, :secret_word, :num_lives_left
+  attr_writer :clue, :secret_word, :num_lives_left
 
   def intro_message
     puts "Secret word : #{secret_word}"
     display_clue
+    puts "lives left : #{num_lives_left}\n------------------------------\n\n"
   end
 
   def save_game
@@ -76,7 +85,8 @@ class Game
       num_lives_left: num_lives_left,
       secret_word: secret_word
     })
-    File.write("#{dirname}/#{save_filename}.json", save_obj)
+    filepath = "#{dirname}/#{save_filename}.json"
+    File.write(filepath, save_obj)
   end
 
   def game_won
@@ -99,7 +109,7 @@ class Game
   end
 
   def user_action
-    puts "Enter the letter of your guess. Enter #{'save'.colorize(:green)} if you would like to save"
+    puts "Enter the letter of your guess. Enter 'save' if you would like to save".colorize(:green)
     input = gets.chomp.downcase
     return { is_save: true, guess: nil } if input == "save"
     return { is_save: false, guess: input } if input.match("^[a-zA-Z]{1}$")
@@ -109,12 +119,12 @@ class Game
   end
 
   def display_clue
-    print "Clue : "
+    print "Clue : ".colorize(:green)
     clue.each do |letter|
       if letter.nil?
-        print "_ "
+        print "_ ".colorize(:green)
       else
-        print "#{letter} "
+        print "#{letter} ".colorize(:green)
       end
     end
     puts "\n"
